@@ -1,0 +1,14 @@
+{
+  "package": "bright-sdk-i18n-client",
+  "generatedAt": "2025-11-02T08:08:55.349Z",
+  "files": [
+    {
+      "path": "brightsdk-i18n.bundle.js",
+      "size": 1087,
+      "type": "js"
+    }
+  ],
+  "type": "major",
+  "version": "1",
+  "fullVersion": "1.0.0"
+}

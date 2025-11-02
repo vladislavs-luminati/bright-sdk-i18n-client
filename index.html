@@ -1,0 +1,160 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>bright-sdk-i18n-client — Example</title>
+    <style>
+      :root{--bg:#f7f9fb;--card:#fff;--muted:#6b7280;--accent:#2563eb}
+      body{font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial;line-height:1.45;background:var(--bg);color:#111;margin:0;padding:28px}
+      .wrap{max-width:980px;margin:0 auto}
+      header{display:flex;align-items:center;gap:16px;margin-bottom:20px}
+      h1{font-size:20px;margin:0}
+      .subtitle{color:var(--muted);font-size:13px}
+      .grid{display:grid;grid-template-columns:1fr 420px;gap:18px;align-items:start}
+      .card{background:var(--card);border-radius:10px;padding:16px;box-shadow:0 6px 18px rgba(15,23,42,0.06)}
+      pre.usage{background:#0b1220;color:#cfe8ff;padding:12px;border-radius:6px;overflow:auto;font-size:13px}
+      table{width:100%;border-collapse:collapse;font-size:13px}
+      th,td{padding:8px 10px;border-bottom:1px solid #eef2f7;text-align:left}
+      thead th{background:#fbfdff;font-weight:600}
+      .locale-cell{width:120px;font-weight:600;color:var(--accent)}
+      .muted{color:var(--muted);font-size:13px}
+      @media (max-width:900px){.grid{grid-template-columns:1fr}} 
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <header>
+        <h1>bright-sdk-i18n-client — example</h1>
+        <div class="subtitle">Browser loader demo • small translations table</div>
+      </header>
+
+      <div class="grid">
+        <section class="card" id="left">
+          <h2 style="margin-top:0">Usage</h2>
+          <p class="muted">Initialize the client in the browser with the browser loader (fetches JSON files listed in <code>example/locales/manifest.json</code>).</p>
+
+          <h4 style="margin:10px 0 6px">Project structure (minimal)</h4>
+          <pre class="usage" style="background:#fff8eb;color:#6b3b00;border:1px solid #ffedd5" id="project-structure">
+bright-sdk-i18n-client/
+├─ package.json
+├─ README.md
+├─ src/
+│  ├─ index.js        # public facade
+│  ├─ i18n.js         # core runtime
+│  └─ loaders/
+│     └─ browser-loader.js
+├─ index.html         # demo (moved from example/)
+├─ example/
+│  └─ locales/
+│     ├─ manifest.json
+│     ├─ en.json
+│     ├─ ru.json
+│     └─ ...
+└─ dist/
+   └─ brightsdk-i18n.bundle.js
+          </pre>
+
+          <pre class="usage" id="usage-snippet">// example
+import { I18n } from 'bright-sdk-i18n-client'
+
+await I18n.init({
+  loader: { type: 'browser', dir: './example/locales', manifest: 'manifest.json' },
+  locale: 'en',
+  defaultLocale: 'en'
+})
+
+// then use:
+I18n.t('hello')
+I18n.translateValue('Some string to translate')
+          </pre>
+
+          <h3 style="margin-bottom:6px">Live greeting</h3>
+          <div id="greet" style="font-size:18px;font-weight:600;color:#0f172a">…</div>
+          <p class="muted" id="status">Loading locales…</p>
+        </section>
+
+        <aside class="card">
+          <h2 style="margin-top:0">Translations table</h2>
+          <p class="muted">Union of keys across locales (demo languages: en, ru, zh, ar, hi).</p>
+          <div style="overflow:auto;max-height:520px">
+            <table id="translations">
+              <thead>
+                <tr id="translations-head"><th>Locale</th></tr>
+              </thead>
+              <tbody id="translations-body"></tbody>
+            </table>
+          </div>
+        </aside>
+      </div>
+    </div>
+
+    <!-- Use the packaged bundle from releases/latest when available -->
+    <script src="releases/latest/brightsdk-i18n.bundle.js" defer></script>
+
+    <script type="module">
+      (async () => {
+        const greetEl = document.getElementById('greet');
+        const statusEl = document.getElementById('status');
+        try {
+          // Prefer the packaged bundle if it's loaded as a global; otherwise fall back to the local dev module.
+          let I18n;
+          if (typeof window !== 'undefined' && (window.BrightSdkI18n || window.I18n || window.brightsdkI18n)) {
+            I18n = window.BrightSdkI18n || window.I18n || window.brightsdkI18n;
+          } else {
+            const mod = await import('./src/index.js');
+            I18n = mod.I18n || mod.default || mod;
+          }
+
+          const result = await I18n.init({
+            loader: { type: 'browser', dir: './example/locales', manifest: 'manifest.json' },
+            locale: 'en',
+            defaultLocale: 'en'
+          });
+
+          const instance = result.I18n || result;
+          const messages = result.messages || {};
+
+          // set greeting
+          greetEl.textContent = instance.t('hello') || '—';
+          statusEl.textContent = 'Loaded ' + Object.keys(messages).length + ' locales.';
+
+          // build translations table: compute union of keys
+          const keys = new Set();
+          Object.values(messages).forEach(msgs => {
+            Object.keys(msgs || {}).forEach(k => keys.add(k));
+          });
+          const keyList = Array.from(keys).sort();
+
+          const theadRow = document.getElementById('translations-head');
+          keyList.forEach(k => {
+            const th = document.createElement('th');
+            th.textContent = k;
+            theadRow.appendChild(th);
+          });
+
+          const tbody = document.getElementById('translations-body');
+          Object.keys(messages).sort().forEach(localeId => {
+            const row = document.createElement('tr');
+            const locCell = document.createElement('td');
+            locCell.textContent = localeId;
+            locCell.className = 'locale-cell';
+            row.appendChild(locCell);
+            const localeMsgs = messages[localeId] || {};
+            keyList.forEach(k => {
+              const cell = document.createElement('td');
+              const val = localeMsgs[k];
+              cell.textContent = (typeof val === 'string') ? val : (val ? JSON.stringify(val) : '—');
+              row.appendChild(cell);
+            });
+            tbody.appendChild(row);
+          });
+        } catch (e) {
+          console.error('example failed', e);
+          greetEl.textContent = 'Failed to load locales';
+          statusEl.textContent = e && e.message ? e.message : 'Error';
+        }
+      })();
+    </script>
+  </body>
+</html>
