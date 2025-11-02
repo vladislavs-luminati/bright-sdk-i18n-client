@@ -7,6 +7,10 @@
 // with `{ init, load }` API. We import the browser implementation which is
 // safe to import in client environments.
 import * as loaders from './loaders/index.js';
+// Statically import the runtime so webpack can produce a single-file UMD bundle
+// (avoids emitting an additional async chunk). The runtime implements the
+// actual translation methods (init, t, translateValue, addMessages, etc.).
+import I18nRuntime from './i18n.js';
 
 async function _init(options = {}) {
   const {
@@ -38,17 +42,12 @@ async function _init(options = {}) {
   }
 
   // obtain i18n implementation — prefer an already-installed global, otherwise
-  // import the package's `./i18n.js` implementation.
+  // use the statically imported runtime (I18nRuntime).
   let I18n = (typeof window !== 'undefined' && window.BrightSdkI18n) || null;
   if (!I18n) {
-    try {
-      const mod = await import('./i18n.js');
-      I18n = mod.default || mod;
-      if (typeof window !== 'undefined') window.BrightSdkI18n = I18n;
-    } catch (e) {
-      console.error('Failed to import i18n implementation', e);
-      throw e;
-    }
+    I18n = I18nRuntime || null;
+    if (!I18n) throw new Error('i18n runtime not available');
+    if (typeof window !== 'undefined') window.BrightSdkI18n = I18n;
   }
 
   I18n.init({ locale, defaultLocale, messages });
