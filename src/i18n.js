@@ -73,7 +73,10 @@ var BrightSdkI18n = (function () {
 
 // expose globally for browser usage
 if (typeof window !== 'undefined') {
-	window.BrightSdkI18n = BrightSdkI18n;
+	// expose runtime on a private global to avoid colliding with the UMD
+	// bundle export (which may also assign to window.BrightSdkI18n). The
+	// facade will use this private name when present to avoid recursion.
+	window.__BrightSdkI18nRuntime = BrightSdkI18n;
 }
 
 export default BrightSdkI18n;

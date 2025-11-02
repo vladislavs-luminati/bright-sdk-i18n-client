@@ -12,16 +12,18 @@ import * as loaders from './loaders/index.js';
 // actual translation methods (init, t, translateValue, addMessages, etc.).
 import I18nRuntime from './i18n.js';
 
+const defaultLoader = { type: 'file', dir: './locales', manifest: 'manifest.json' };
+
 async function _init(options = {}) {
   const {
     // options.loader must be an object: { type: 'auto'|'file'|'example'|'<module-path>', dir, manifest }
-    loader = { type: 'auto', dir: './locales', manifest: 'manifest.json' },
+    loader = defaultLoader,
     locale = 'es_ES',
     defaultLocale = 'en_US',
   } = options;
 
   // loader is expected to be an object; merge with defaults.
-  const loaderObj = Object.assign({ type: 'file', dir: './locales', manifest: 'manifest.json' }, loader);
+  const loaderObj = Object.assign(defaultLoader, loader);
 
   let messages = {};
   try {
@@ -41,31 +43,37 @@ async function _init(options = {}) {
     throw e;
   }
 
-  // obtain i18n implementation — prefer an already-installed global, otherwise
-  // use the statically imported runtime (I18nRuntime).
-  let I18n = (typeof window !== 'undefined' && window.BrightSdkI18n) || null;
-  if (!I18n) {
-    I18n = I18nRuntime || null;
-    if (!I18n) throw new Error('i18n runtime not available');
-    if (typeof window !== 'undefined') window.BrightSdkI18n = I18n;
-  }
+  // obtain i18n implementation — prefer an already-installed global runtime
+  // if present, otherwise use the statically imported runtime. To avoid
+  // accidental recursion when the bundle exports the facade as the global
+  // object (the UMD wrapper assigns the bundle export to window.BrightSdkI18n),
+  // we capture the runtime in a local variable and use it directly.
+  const _runtime = (typeof window !== 'undefined' && window.__BrightSdkI18nRuntime) || I18nRuntime || null;
+  if (!_runtime) throw new Error('i18n runtime not available');
 
-  I18n.init({ locale, defaultLocale, messages });
+  // Initialize the runtime directly and return it. Do not overwrite
+  // `window.BrightSdkI18n` here — the UMD wrapper will export the facade and
+  // we keep the runtime reference local to avoid self-recursive proxies.
+  _runtime.init({ locale, defaultLocale, messages });
   console.log('i18n messages loaded', Object.keys(messages));
 
-  return { I18n, messages };
+  return { I18n: _runtime, messages };
 }
 
 // Public I18n facade exported from this module. Consumers import this object and
 // call I18n.init(options) to initialize translations. The other methods are
 // convenience proxies to the runtime BrightSdkI18n implementation (when present).
+// Expose a facade that delegates to the statically-imported runtime instance
+// to avoid calling the global `window.BrightSdkI18n` (which will point to the
+// facade itself after bundling). Use a private runtime reference.
+const _facadeRuntime = (typeof window !== 'undefined' && window.__BrightSdkI18nRuntime) || I18nRuntime;
 export const I18n = {
   init: _init,
-  t: (key, params) => (typeof window !== 'undefined' && window.BrightSdkI18n) ? window.BrightSdkI18n.t(key, params) : key,
-  translateValue: (val) => (typeof window !== 'undefined' && window.BrightSdkI18n) ? window.BrightSdkI18n.translateValue(val) : val,
-  addMessages: (locale, msgs) => (typeof window !== 'undefined' && window.BrightSdkI18n) ? window.BrightSdkI18n.addMessages(locale, msgs) : null,
-  setLocale: (l) => (typeof window !== 'undefined' && window.BrightSdkI18n) ? window.BrightSdkI18n.setLocale(l) : null,
-  getLocale: () => (typeof window !== 'undefined' && window.BrightSdkI18n) ? window.BrightSdkI18n.getLocale() : undefined
+  t: (key, params) => _facadeRuntime ? _facadeRuntime.t(key, params) : key,
+  translateValue: (val) => _facadeRuntime ? _facadeRuntime.translateValue(val) : val,
+  addMessages: (locale, msgs) => _facadeRuntime ? _facadeRuntime.addMessages(locale, msgs) : null,
+  setLocale: (l) => _facadeRuntime ? _facadeRuntime.setLocale(l) : null,
+  getLocale: () => _facadeRuntime ? _facadeRuntime.getLocale() : undefined
 };
 
 export default I18n;

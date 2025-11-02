@@ -14,6 +14,8 @@ export default {
   output: {
     filename: 'brightsdk-i18n.bundle.js',
     path: path.resolve(__dirname, 'dist'),
+    // remove old chunks before emitting so we end up with a single file
+    clean: true,
     library: 'BrightSdkI18n',
     libraryTarget: 'umd', // Universal support for CommonJS, AMD, and global
     libraryExport: 'default', // remove default wrapper
@@ -23,6 +25,11 @@ export default {
       const: false,
       destructuring: false,
     },
+  },
+  // Prevent automatic code-splitting/chunk generation for this tiny library
+  optimization: {
+    splitChunks: false,
+    runtimeChunk: false,
   },
   resolve: {
     fullySpecified: false,
