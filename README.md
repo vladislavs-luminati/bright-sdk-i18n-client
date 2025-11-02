@@ -55,7 +55,7 @@ Quick usage
   │  ├─ i18n.js         # core runtime
   │  └─ loaders/
   │     └─ browser-loader.js
-  ├─ index.html         # demo (moved from example/)
+  ├─ index.html         # demo
   ├─ example/
   │  └─ locales/
   │     ├─ manifest.json

@@ -4,38 +4,30 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <title>bright-sdk-i18n-client — Example</title>
-    <style>
-      :root{--bg:#f7f9fb;--card:#fff;--muted:#6b7280;--accent:#2563eb}
-      body{font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial;line-height:1.45;background:var(--bg);color:#111;margin:0;padding:28px}
-      .wrap{max-width:980px;margin:0 auto}
-      header{display:flex;align-items:center;gap:16px;margin-bottom:20px}
-      h1{font-size:20px;margin:0}
-      .subtitle{color:var(--muted);font-size:13px}
-      .grid{display:grid;grid-template-columns:1fr 420px;gap:18px;align-items:start}
-      .card{background:var(--card);border-radius:10px;padding:16px;box-shadow:0 6px 18px rgba(15,23,42,0.06)}
-      pre.usage{background:#0b1220;color:#cfe8ff;padding:12px;border-radius:6px;overflow:auto;font-size:13px}
-      table{width:100%;border-collapse:collapse;font-size:13px}
-      th,td{padding:8px 10px;border-bottom:1px solid #eef2f7;text-align:left}
-      thead th{background:#fbfdff;font-weight:600}
-      .locale-cell{width:120px;font-weight:600;color:var(--accent)}
-      .muted{color:var(--muted);font-size:13px}
-      @media (max-width:900px){.grid{grid-template-columns:1fr}} 
-    </style>
+  <link rel="stylesheet" href="./styles.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
   </head>
   <body>
+    <!-- version badge (top-left) — plain version tag only -->
+    <div class="version-badge">
+      <span class="version">v1.0.0</span>
+    </div>
     <div class="wrap">
       <header>
-        <h1>bright-sdk-i18n-client — example</h1>
-        <div class="subtitle">Browser loader demo • small translations table</div>
+        <div class="title-wrap">
+          <h1><span class="logo-emoji">✨</span> bright-sdk-i18n-client — example <span class="title-rocket">🚀</span></h1>
+          <div class="subtitle">Browser loader demo • small translations table — tiny, fast, and friendly <span>🌍</span></div>
+        </div>
+        <a class="repo-link repo-link-fixed" href="https://github.com/vladislavs-luminati/bright-sdk-i18n-client" target="_blank" rel="noopener noreferrer">📚 View on GitHub</a>
       </header>
 
       <div class="grid">
-        <section class="card" id="left">
-          <h2 style="margin-top:0">Usage</h2>
-          <p class="muted">Initialize the client in the browser with the browser loader (fetches JSON files listed in <code>example/locales/manifest.json</code>).</p>
+        <section class="card header-accent" id="left">
+          <h2>Usage</h2>
+          <div class="card-meta">Initialize the client in the browser with the browser loader (fetches JSON files listed in <code>example/locales/manifest.json</code>).</div>
 
           <h4 style="margin:10px 0 6px">Project structure (minimal)</h4>
-          <pre class="usage" style="background:#fff8eb;color:#6b3b00;border:1px solid #ffedd5" id="project-structure">
+          <pre class="usage project-structure" id="project-structure">
 bright-sdk-i18n-client/
 ├─ package.json
 ├─ README.md
@@ -44,7 +36,7 @@ bright-sdk-i18n-client/
 │  ├─ i18n.js         # core runtime
 │  └─ loaders/
 │     └─ browser-loader.js
-├─ index.html         # demo (moved from example/)
+├─ index.html         # demo
 ├─ example/
 │  └─ locales/
 │     ├─ manifest.json
@@ -70,11 +62,11 @@ I18n.translateValue('Some string to translate')
           </pre>
 
           <h3 style="margin-bottom:6px">Live greeting</h3>
-          <div id="greet" style="font-size:18px;font-weight:600;color:#0f172a">…</div>
-          <p class="muted" id="status">Loading locales…</p>
+          <div id="greet" style="font-size:18px;font-weight:700;color:#0f172a">Welcome <span class="greet-emoji">✨</span></div>
+          <p class="muted" id="status">Loading locales… <span>⏳</span></p>
         </section>
 
-        <aside class="card">
+        <aside class="card aside-card">
           <h2 style="margin-top:0">Translations table</h2>
           <p class="muted">Union of keys across locales (demo languages: en, ru, zh, ar, hi).</p>
           <div style="overflow:auto;max-height:520px">
@@ -115,9 +107,11 @@ I18n.translateValue('Some string to translate')
           const instance = result.I18n || result;
           const messages = result.messages || {};
 
-          // set greeting
-          greetEl.textContent = instance.t('hello') || '—';
-          statusEl.textContent = 'Loaded ' + Object.keys(messages).length + ' locales.';
+          // set greeting with playful emoji
+          greetEl.innerHTML = (instance.t('hello') || '—') + ' <span class="greet-emoji">🎉</span>';
+          statusEl.innerHTML = 'Loaded ' + Object.keys(messages).length + ' locales. <span>✅</span>';
+          // run confetti for extra celebration
+          try{runConfetti()}catch(e){}
 
           // build translations table: compute union of keys
           const keys = new Set();
@@ -151,10 +145,29 @@ I18n.translateValue('Some string to translate')
           });
         } catch (e) {
           console.error('example failed', e);
-          greetEl.textContent = 'Failed to load locales';
+          greetEl.innerHTML = 'Failed to load locales <span class="greet-emoji">😿</span>';
           statusEl.textContent = e && e.message ? e.message : 'Error';
-        }
+  }
       })();
+      // confetti helper: simple emoji-based confetti
+      function runConfetti(){
+        const rootId = 'confetti-root';
+        let root = document.getElementById(rootId);
+        if(!root){ root = document.createElement('div'); root.id = rootId; document.body.appendChild(root); }
+        const emojis = ['🎉','✨','🎊','💥','🍾','🎈','🥳'];
+        const count = 18;
+        for(let i=0;i<count;i++){
+          const el = document.createElement('div');
+          el.className='confetti';
+          el.style.left = (20 + Math.random()*60) + '%';
+          el.style.setProperty('--dx', (Math.random()*300 - 150) + 'px');
+          el.style.fontSize = (12 + Math.random()*18) + 'px';
+          el.style.top = (10 + Math.random()*10) + '%';
+          el.textContent = emojis[Math.floor(Math.random()*emojis.length)];
+          root.appendChild(el);
+          setTimeout(()=>{ el.remove(); }, 1400 + Math.random()*400);
+        }
+      }
     </script>
   </body>
 </html>
